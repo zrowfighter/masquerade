@@ -1,0 +1,8 @@
+.env
+.tags_swap
+*.swp
+*.log
+.DS_Store
+
+node_modules/
+npm-debug.log

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Masquerade</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/masquerade/manifest.json">
+  <style>
+    html, body {
+      font-family: sans-serif;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      position: relative;
+      background: rgb(12, 102, 208);
+    }
+    #elScreenSource {
+      opacity: 0;
+    }
+    #elScreen, #elScreenSource {
+      touch-action: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .u-bluebg {
+      background: rgb(12, 102, 208);
+    }
+    .header {
+      position: absolute;
+      top: 96px;
+      left: 0;
+      right: 0;
+      height: 50px;
+      color: white;
+    }
+    .devicebar {
+      position: absolute;
+      top: 0px;
+      left: 0;
+      right: 0;
+      height: 40px;
+      color: white;
+    }
+    .header-time {
+      text-align: center;
+      font-weight: 700;
+      font-size: 34px;
+      position: absolute;
+      top: 114px;
+      left: 0;
+      right: 0;
+      letter-spacing: 0.5px;
+      color: rgb(254, 254, 106);
+    }
+  </style>
+</head>
+<body>
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec2 a_position;
+    attribute vec2 a_texCoord;
+    uniform vec2 u_resolution;
+    varying vec2 v_texCoord;
+
+    void main() {
+      vec2 clipSpace = (a_position / u_resolution) * 2.0 - 1.0; // convert the rectangle from pixels to clipspace
+      gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+      v_texCoord = a_texCoord; // pass the texCoord to the fragment shader
+    }
+  </script>
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform float shouldColor;
+    uniform sampler2D u_image;
+    varying vec2 v_texCoord;
+
+    const float SCALAR_TOLERANCE0 = 0.1;
+    const vec4 TOLERANCE0 = vec4(SCALAR_TOLERANCE0, SCALAR_TOLERANCE0, SCALAR_TOLERANCE0, SCALAR_TOLERANCE0);
+
+    const float SCALAR_TOLERANCE = 0.16;
+    const vec4 TOLERANCE = vec4(SCALAR_TOLERANCE, SCALAR_TOLERANCE, SCALAR_TOLERANCE, SCALAR_TOLERANCE);
+
+    const float SCALAR_TOLERANCE2 = 0.3;
+    const vec4 TOLERANCE2 = vec4(SCALAR_TOLERANCE2, SCALAR_TOLERANCE2, SCALAR_TOLERANCE2, SCALAR_TOLERANCE2);
+
+    const vec4 SKY_BLUE      = vec4(7.0/255.0, 62.0/255.0, 126.0/255.0, 1.0);
+    const vec4 SKY_ORANGE    = vec4(255.0/255.0, 102.0/255.0, 0.0/255.0, 1.0);
+
+    const vec4 BUILDING_YELLOW  = vec4(255.0/255.0, 238.0/255.0, 19.0/255.0, 1.0);
+    const vec4 BUILDING_YELLOW2 = vec4(200.0/255.0, 196.0/255.0, 78.0/255.0, 1.0);
+    const vec4 BUILDING_YELLOW3 = vec4(235.0/255.0, 234.0/255.0, 93.0/255.0, 1.0);
+    const vec4 BUILDING_YELLOW4 = vec4(176.0/255.0, 197.0/255.0, 183.0/255.0, 1.0);
+    const vec4 BUILDING_YELLOW5 = vec4(147.0/255.0, 158.0/255.0, 82.0/255.0, 1.0);
+    const vec4 BUILDING_YELLOW6 = vec4(194.0/255.0, 208.0/255.0, 136.0/255.0, 1.0);
+    const vec4 BUILDING_GRAY    = vec4(93.0/255.0, 102.0/255.0, 122.0/255.0, 1.0);
+
+    const vec4 BUILDING_YELLOW_DARK  = vec4(255.0/255.0, 175.0/255.0,  27.0/255.0, 1.0);
+    const vec4 BUILDING_YELLOW_DARK2 = vec4(207.0/255.0, 163.0/255.0,  8.0/255.0, 1.0);
+    const vec4 BUILDING_GRAY_DARK    = vec4(55.0/255.0, 59.0/255.0, 71.0/255.0, 1.0);
+
+    const vec4 BUILDING_YELLOW_WINDOW  = vec4(190.0/255.0, 158.0/255.0, 77.0/255.0, 1.0);
+    const vec4 BUILDING_YELLOW_WINDOW2 = vec4(180.0/255.0, 122.0/255.0, 19.0/255.0, 1.0);
+    const vec4 BUILDING_GRAY_WINDOW    = vec4(48.0/255.0, 80.0/255.0, 104.0/255.0, 1.0);
+
+    vec4 colorSwitch(float shouldSwitch, vec4 aColor, vec4 bColor) {
+      return (shouldSwitch * aColor) + (1.0 - shouldSwitch) * bColor;
+    }
+
+    vec4 replaceColor0(vec4 color, vec4 matchColor, vec4 replacementColor) {
+      vec4 colorDiff = abs(matchColor - color);
+      float doReplace = float(all(lessThan(colorDiff, TOLERANCE0)));
+      return colorSwitch(doReplace, replacementColor, color);
+    }
+
+    vec4 replaceColor(vec4 color, vec4 matchColor, vec4 replacementColor) {
+      vec4 colorDiff = abs(matchColor - color);
+      float doReplace = float(all(lessThan(colorDiff, TOLERANCE)));
+      return colorSwitch(doReplace, replacementColor, color);
+    }
+
+    vec4 replaceColor2(vec4 color, vec4 matchColor, vec4 replacementColor) {
+      vec4 colorDiff = abs(matchColor - color);
+      float doReplace = float(all(lessThan(colorDiff, TOLERANCE2)));
+      return colorSwitch(doReplace, replacementColor, color);
+    }
+
+    float isBetween(float v, float min, float max) {
+      return sign(sign(v - min) + sign(max - v));
+    }
+
+    void main() {
+      vec4 color = texture2D(u_image, v_texCoord);
+
+      float replaceSky = isBetween(v_texCoord.t, 0.195, 0.59) * shouldColor;
+      color = colorSwitch(replaceSky, replaceColor2(color, SKY_BLUE, SKY_ORANGE), color);
+
+      float replaceBuildings = isBetween(v_texCoord.t, 0.46, 0.7225) * shouldColor;
+      color = colorSwitch(replaceBuildings, replaceColor(color, BUILDING_YELLOW_DARK, BUILDING_GRAY_DARK), color);
+      color = colorSwitch(replaceBuildings, replaceColor(color, BUILDING_YELLOW_DARK2, BUILDING_GRAY_DARK), color);
+
+      float replaceBuildingWindow = isBetween(v_texCoord.t, 0.692, 0.725) * shouldColor;
+      color = colorSwitch(replaceBuildingWindow, replaceColor0(color, BUILDING_YELLOW_WINDOW, BUILDING_GRAY_WINDOW), color);
+      color = colorSwitch(replaceBuildingWindow, replaceColor0(color, BUILDING_YELLOW_WINDOW2, BUILDING_GRAY_WINDOW), color);
+
+      float replaceBuildingTops = isBetween(v_texCoord.t, 0.46, 0.67) * shouldColor;
+      color = colorSwitch(replaceBuildings, replaceColor(color, BUILDING_YELLOW, BUILDING_GRAY), color);
+      color = colorSwitch(replaceBuildingTops, replaceColor(color, BUILDING_YELLOW2, BUILDING_GRAY), color);
+      color = colorSwitch(replaceBuildingTops, replaceColor(color, BUILDING_YELLOW3, BUILDING_GRAY), color);
+      color = colorSwitch(replaceBuildingTops, replaceColor(color, BUILDING_YELLOW4, BUILDING_GRAY), color);
+      color = colorSwitch(replaceBuildingTops, replaceColor(color, BUILDING_YELLOW5, BUILDING_GRAY), color);
+      color = colorSwitch(replaceBuildingTops, replaceColor(color, BUILDING_YELLOW6, BUILDING_GRAY), color);
+
+      gl_FragColor = color;
+    }
+  </script>
+
+  <video autoplay id="elScreenSource" loop muted playsinline>
+    <source src="screen-android.mp4" />
+  </video>
+  <canvas id="elScreen"></canvas>
+  <div class="devicebar u-bluebg"></div>
+  <div class="header-time u-bluebg" id="elTime"></div>
+
+  <script>
+    // Helper function which returns a promise which resolves once the service worker registration
+    // is past the "installing" state.
+    function waitUntilInstalled(registration) {
+      return new Promise(function(resolve, reject) {
+        if (registration.installing) {
+          // If the current registration represents the "installing" service worker, then wait
+          // until the installation step (during which the resources are pre-fetched) completes
+          // to display the file list.
+          registration.installing.addEventListener('statechange', function(e) {
+            if (e.target.state === 'installed') {
+              resolve();
+            } else if (e.target.state === 'redundant') {
+              reject();
+            }
+          });
+        } else {
+          // Otherwise, if this isn't the "installing" service worker, then installation must have been
+          // completed during a previous visit to this page, and the resources are already pre-fetched.
+          // So we can show the list of files right away.
+          resolve();
+        }
+      });
+    }
+
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+    .then(waitUntilInstalled)
+    .then(() => {
+      // Utils
+      const pad = obj => (''+obj).padStart(2, "0");
+
+      /* prevent over scroll */ (() => {
+        document.body.addEventListener('touchmove', e => e.preventDefault());
+      })();
+
+      /* setup time */ (() => {
+        const elTime = window.elTime;
+        const updateTime = () => {
+          const d = new Date();
+          let hours = d.getHours();
+          let amPm = "AM";
+          if (hours > 12) {
+            amPm = "PM";
+            hours -= 12;
+          }
+          const timeString = `${hours}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${amPm}`;
+          const dateString = `${pad(d.getMonth() + 1)}/${pad(d.getDate())}/${d.getFullYear() - 2000}`;
+
+          elTime.textContent = `${timeString} ${dateString}`;
+        };
+        updateTime();
+        setInterval(updateTime, 1000);
+      })();
+
+      /* setup screen */ (() => {
+        let shouldColor = true;
+        document.body.addEventListener('touchend', () => {
+          window.elScreenSource.play(); // Hack around changed Chrome policy
+          shouldColor = !shouldColor;
+        });
+
+        const compileShader = (ctx, shaderSource, shaderType) => {
+          const shader = ctx.createShader(shaderType);
+          ctx.shaderSource(shader, shaderSource);
+          ctx.compileShader(shader);
+          return shader;
+        };
+
+        // Helper function to compile webGL program
+        const createWebGLProgram = (ctx, vertexShaderSource, fragmentShaderSource) => {
+          const program = ctx.createProgram();
+          ctx.attachShader(program, compileShader(ctx, vertexShaderSource, ctx.VERTEX_SHADER));
+          ctx.attachShader(program, compileShader(ctx, fragmentShaderSource, ctx.FRAGMENT_SHADER));
+          ctx.linkProgram(program);
+          ctx.useProgram(program);
+          return program;
+        }
+
+        const setupVideo = (image) => {
+          const canvas = window.elScreen;
+          const width = image.clientWidth;
+          const height = image.clientHeight;
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+          const fragmentShaderSource = document.getElementById("fragment-shader").text;
+          const vertexShaderSource = document.getElementById("vertex-shader").text;
+          const program = createWebGLProgram(ctx, vertexShaderSource, fragmentShaderSource);
+
+          // Expose canvas width and height to shader via u_resolution
+          const resolutionLocation = ctx.getUniformLocation(program, "u_resolution");
+          ctx.uniform2f(resolutionLocation, width, height);
+
+          // Position rectangle vertices (2 triangles)
+          const positionLocation = ctx.getAttribLocation(program, "a_position");
+          ctx.bindBuffer(ctx.ARRAY_BUFFER, ctx.createBuffer());
+          ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array([
+                0,      0,
+            width,      0,
+                0, height,
+                0, height,
+            width,      0,
+            width, height
+          ]), ctx.STATIC_DRAW);
+          ctx.enableVertexAttribArray(positionLocation);
+          ctx.vertexAttribPointer(positionLocation, 2, ctx.FLOAT, false, 0, 0);
+
+          //Position texture
+          const texCoordLocation = ctx.getAttribLocation(program, "a_texCoord");
+          ctx.bindBuffer(ctx.ARRAY_BUFFER, ctx.createBuffer());
+          ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array([
+            0.0, 0.0,
+            1.0, 0.0,
+            0.0, 1.0,
+            0.0, 1.0,
+            1.0, 0.0,
+            1.0, 1.0
+          ]), ctx.STATIC_DRAW);
+          ctx.enableVertexAttribArray(texCoordLocation);
+          ctx.vertexAttribPointer(texCoordLocation, 2, ctx.FLOAT, false, 0, 0);
+
+          // color flag
+          const shouldColorLocation = ctx.getUniformLocation(program, "shouldColor");
+          ctx.uniform1f(shouldColorLocation, 0.0);
+
+          // Create a texture.
+          ctx.bindTexture(ctx.TEXTURE_2D, ctx.createTexture());
+
+          // Set the parameters so we can render any size image.
+          ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+          ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+          ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+          ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+          return { ctx, shouldColorLocation };
+        }
+
+        let hasSetup = false;
+        window.elScreenSource.addEventListener('playing', () => {
+          if (!hasSetup) {
+            hasSetup = true;
+            const video = window.elScreenSource;
+            const { ctx, shouldColorLocation } = setupVideo(video);
+            const drawFrame = () => {
+              ctx.uniform1f(shouldColorLocation, shouldColor ? 1.0 : 0.0);
+              ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, ctx.UNSIGNED_BYTE, video);
+              ctx.drawArrays(ctx.TRIANGLES, 0, 6);
+              requestAnimationFrame(drawFrame);
+            }
+            drawFrame();
+          }
+        });
+      })();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Masquerade</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta content="yes" name="apple-mobile-web-app-capable" />
+  <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style" />
+  <link rel="apple-touch-icon" href="images/AppIcon60x60.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="images/AppIcon60x60-2x.png" />
+  <style>
+    html, body {
+      font-family: sans-serif;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      position: relative;
+      width: 100%;
+      background: rgb(12, 102, 208);
+      position: fixed;
+      overflow: hidden;
+    }
+    .screenBack, .screenSource {
+      opacity: 0;
+    }
+    .screen, .screenBack, .screenSource {
+      touch-action: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .u-bluebg {
+      background: rgb(12, 102, 208);
+    }
+    .header {
+      position: absolute;
+      top: 67px;
+      left: 0;
+      right: 0;
+      height: 50px;
+      color: white;
+    }
+    .devicebar {
+      position: absolute;
+      top: 0px;
+      left: 0;
+      right: 0;
+      height: 22px;
+      color: white;
+    }
+    .header-time {
+      text-align: center;
+      font-weight: 700;
+      font-size: 34px;
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      right: 0;
+      letter-spacing: 0.5px;
+    }
+    .code {
+      font-size: 26px;
+      padding: 1px 0px;
+      position: absolute;
+      top: 534px;
+      right: 10px;
+      background: #0d7cac;
+      color: white;
+      border-radius: 4px;
+      outline: none;
+      border: none;
+      width: 60px;
+      text-align: center;
+      text-transform: capitalize;
+    }
+  </style>
+</head>
+<body>
+  <video autoplay class="screenSource" id="elScreenSource" loop muted playsinline>
+    <source src="screen-iphone3.mp4" />
+  </video>
+  <canvas class="screenBack" id="elScreenBack"></canvas>
+  <canvas class="screen" id="elScreen"></canvas>
+  <div class="devicebar u-bluebg"></div>
+  <div class="header u-bluebg">
+    <div class="header-time" id="elTime">
+      4:12:08PM 02/10/18
+    </div>
+  </div>
+
+  <script>
+  // Helper function which returns a promise which resolves once the service worker registration
+  // is past the "installing" state.
+  function waitUntilInstalled(registration) {
+    return new Promise(function(resolve, reject) {
+      if (registration.installing) {
+        // If the current registration represents the "installing" service worker, then wait
+        // until the installation step (during which the resources are pre-fetched) completes
+        // to display the file list.
+        registration.installing.addEventListener('statechange', function(e) {
+          if (e.target.state === 'installed') {
+            resolve();
+          } else if (e.target.state === 'redundant') {
+            reject();
+          }
+        });
+      } else {
+        // Otherwise, if this isn't the "installing" service worker, then installation must have been
+        // completed during a previous visit to this page, and the resources are already pre-fetched.
+        // So we can show the list of files right away.
+        resolve();
+      }
+    });
+  }
+
+  navigator.serviceWorker.register('./service-worker-iphone.js', { scope: './' })
+  .then(waitUntilInstalled)
+  .then(() => {
+    // Utils
+    const pad = obj => (''+obj).padStart(2, "0");
+
+    /* prevent over scroll */ (() => {
+      document.body.addEventListener('touchmove', e => e.preventDefault());
+    })();
+
+    /* setup time */ (() => {
+      const elTime = window.elTime;
+      const updateTime = () => {
+        const d = new Date();
+        let hours = d.getHours();
+        let amPm = "AM";
+        if (hours > 12) {
+          amPm = "PM";
+          hours -= 12;
+        }
+        const timeString = `${hours}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${amPm}`;
+        const dateString = `${pad(d.getMonth() + 1)}/${pad(d.getDate())}/${d.getFullYear() - 2000}`;
+
+        elTime.textContent = `${timeString} ${dateString}`;
+      };
+      updateTime();
+      setInterval(updateTime, 1000);
+    })();
+
+    /* setup screen */ (() => {
+      let toggleColor = false;
+      document.body.addEventListener('touchend', () => toggleColor = !toggleColor);
+
+      const PIXEL_MULTIPLIER = 1;
+      const COLOR_REPLACEMENTS = [
+        [/* light blue */ [119, 134, 158], [221, 138, 115]],
+        [/* dark blue */  [ 89,  95, 116], [202,  76,  36]],
+        [/* person 1 */   [207,  90,  46], [121, 198, 228]],
+        [/* person 2 */   [163, 103,  94], [ 96, 176, 214]],
+      ];
+      const elScreenSource = window.elScreenSource;
+      const elScreen = window.elScreen;
+      const elScreenBack = window.elScreenBack;
+      const context = elScreen.getContext('2d');
+      const contextBack = elScreenBack.getContext('2d');
+
+      const width = (elScreen.clientWidth / PIXEL_MULTIPLIER) | 0;
+      const height = (elScreen.clientHeight / PIXEL_MULTIPLIER) | 0;
+      elScreenBack.width = elScreen.width = width;
+      elScreenBack.height = elScreen.height = height;
+
+      const COLOR_REPLACEMENT_START_Y = ((((width * 180)  / PIXEL_MULTIPLIER) | 0) << 2);
+      const COLOR_REPLACEMENT_END_Y = ((((width * 476)  / PIXEL_MULTIPLIER) | 0) << 2);;
+
+      const isEqual = (a, b) => Math.abs(a - b) < 30;
+      const isColor = (r, g, b, targetR, targetG, targetB) =>
+        isEqual(r, targetR) && isEqual(g, targetG) && isEqual(b, targetB);
+
+      const replaceColors = (data, i, replacementMap) => {
+        for(const [target, replace] of replacementMap) {
+          if (isColor(data[i], data[i+1], data[i+2], target[0], target[1], target[2])) {
+            data[i] = replace[0];
+            data[i+1] = replace[1];
+            data[i+2] = replace[2];
+            return;
+          }
+        }
+      }
+
+      const getPixels = () => {
+        contextBack.drawImage(elScreenSource, 0, 0, width, height);
+        const imageData = contextBack.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        for(let i = COLOR_REPLACEMENT_START_Y; i < COLOR_REPLACEMENT_END_Y; i+=4) {
+          replaceColors(data, i, COLOR_REPLACEMENTS);
+        }
+        return imageData;
+      }
+
+      const draw = () => {
+        elScreenSource.play();
+        if (toggleColor) context.putImageData(getPixels(), 0, 0);
+        else context.drawImage(elScreenSource, 0, 0, width, height);
+        requestAnimationFrame(draw);
+      };
+
+      draw();
+    })();
+  });
+  </script>
+</body>
+</html>

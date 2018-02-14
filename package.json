@@ -1,0 +1,16 @@
+{
+  "name": "masquerade",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "reload": "reload -d .",
+    "serve": "serve ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "reload": "^2.2.2",
+    "serve": "^6.5.1"
+  }
+}
