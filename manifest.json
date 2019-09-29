@@ -19,6 +19,8 @@
     }
   ],
   "start_url": "android.html",
-  "display": "fullscreen",
+  "display": "standalone",
+  "theme_color": "rgb(12, 102, 208)",
+  "background_color": "rgb(12, 102, 208)",
   "orientation": "portrait"
 }

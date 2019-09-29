@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Masquerade</title>
   <meta charset="utf-8">
@@ -9,31 +10,44 @@
   <link rel="apple-touch-icon" href="images/AppIcon60x60.png" />
   <link rel="apple-touch-icon" sizes="120x120" href="images/AppIcon60x60-2x.png" />
   <style>
-    html, body {
+    html,
+    body {
       font-family: sans-serif;
-      height: 100%;
+      height: calc(1334px/2);
       margin: 0;
       padding: 0;
       position: relative;
-      width: 100%;
-      background: rgb(12, 102, 208);
+      width: calc(750px/2);
+      background: rgb(9, 107, 202);
       position: fixed;
       overflow: hidden;
+      color: white;
     }
-    .screenBack, .screenSource {
+
+    body {
+      margin-top: -20px;
+    }
+
+    .screenBack,
+    .screenSource {
       opacity: 0;
     }
-    .screen, .screenBack, .screenSource {
+
+    .screen,
+    .screenBack,
+    .screenSource {
       touch-action: none;
-      width: 100%;
-      height: 100%;
+      width: calc(750px/2);
+      height: calc(1334px/2);
       position: absolute;
       top: 0;
       left: 0;
     }
+
     .u-bluebg {
-      background: rgb(12, 102, 208);
+      background: rgb(9, 107, 202);
     }
+
     .header {
       position: absolute;
       top: 67px;
@@ -42,6 +56,7 @@
       height: 50px;
       color: white;
     }
+
     .devicebar {
       position: absolute;
       top: 0px;
@@ -50,6 +65,7 @@
       height: 22px;
       color: white;
     }
+
     .header-time {
       text-align: center;
       font-weight: 700;
@@ -59,7 +75,19 @@
       left: 0;
       right: 0;
       letter-spacing: 0.5px;
+      color: rgb(254, 255, 106);
     }
+
+    .letter-h {
+      font-weight: 700;
+      font-size: 90px;
+      color: rgb(5, 64, 147);
+      position: absolute;
+      bottom: 1px;
+      left: 110px;
+      background-color: rgb(237, 239, 240);
+    }
+
     .code {
       font-size: 26px;
       padding: 1px 0px;
@@ -75,11 +103,26 @@
       text-align: center;
       text-transform: capitalize;
     }
+
+    .black-stripe {
+      width: 2px;
+      position: absolute;
+      top: 124px;
+      bottom: 0;
+      left: 0;
+      background: black;
+    }
+
+    .-right {
+      left: auto;
+      right: 0;
+    }
   </style>
 </head>
+
 <body>
   <video autoplay class="screenSource" id="elScreenSource" loop muted playsinline>
-    <source src="screen-iphone3.mp4" />
+    <source src="screen-iphone-10.mp4" />
   </video>
   <canvas class="screenBack" id="elScreenBack"></canvas>
   <canvas class="screen" id="elScreen"></canvas>
@@ -89,37 +132,39 @@
       4:12:08PM 02/10/18
     </div>
   </div>
-
+  <div class="letter-h">H</div>
+  <div class="black-stripe"></div>
+  <div class="black-stripe -right"></div>
   <script>
-  // Helper function which returns a promise which resolves once the service worker registration
-  // is past the "installing" state.
-  function waitUntilInstalled(registration) {
-    return new Promise(function(resolve, reject) {
-      if (registration.installing) {
-        // If the current registration represents the "installing" service worker, then wait
-        // until the installation step (during which the resources are pre-fetched) completes
-        // to display the file list.
-        registration.installing.addEventListener('statechange', function(e) {
-          if (e.target.state === 'installed') {
-            resolve();
-          } else if (e.target.state === 'redundant') {
-            reject();
-          }
-        });
-      } else {
-        // Otherwise, if this isn't the "installing" service worker, then installation must have been
-        // completed during a previous visit to this page, and the resources are already pre-fetched.
-        // So we can show the list of files right away.
-        resolve();
-      }
-    });
-  }
+    // Helper function which returns a promise which resolves once the service worker registration
+    // is past the "installing" state.
+    function waitUntilInstalled(registration) {
+      return new Promise(function (resolve, reject) {
+        if (registration.installing) {
+          // If the current registration represents the "installing" service worker, then wait
+          // until the installation step (during which the resources are pre-fetched) completes
+          // to display the file list.
+          registration.installing.addEventListener('statechange', function (e) {
+            if (e.target.state === 'installed') {
+              resolve();
+            } else if (e.target.state === 'redundant') {
+              reject();
+            }
+          });
+        } else {
+          // Otherwise, if this isn't the "installing" service worker, then installation must have been
+          // completed during a previous visit to this page, and the resources are already pre-fetched.
+          // So we can show the list of files right away.
+          resolve();
+        }
+      });
+    }
 
-  navigator.serviceWorker.register('./service-worker-iphone.js', { scope: './' })
-  .then(waitUntilInstalled)
-  .then(() => {
+    // navigator.serviceWorker.register('./service-worker-iphone.js', { scope: './' })
+    //   .then(waitUntilInstalled)
+    //   .then(() => {
     // Utils
-    const pad = obj => (''+obj).padStart(2, "0");
+    const pad = obj => ('' + obj).padStart(2, "0");
 
     /* prevent over scroll */ (() => {
       document.body.addEventListener('touchmove', e => e.preventDefault());
@@ -146,14 +191,21 @@
 
     /* setup screen */ (() => {
       let toggleColor = false;
-      document.body.addEventListener('touchend', () => toggleColor = !toggleColor);
+      document.body.addEventListener('click', () => toggleColor = !toggleColor);
 
       const PIXEL_MULTIPLIER = 1;
       const COLOR_REPLACEMENTS = [
-        [/* light blue */ [119, 134, 158], [221, 138, 115]],
-        [/* dark blue */  [ 89,  95, 116], [202,  76,  36]],
-        [/* person 1 */   [207,  90,  46], [121, 198, 228]],
-        [/* person 2 */   [163, 103,  94], [ 96, 176, 214]],
+        [/* light yellow */[137, 155, 37], [92, 101, 121]],
+        [/* light yellow */[155, 175, 67], [92, 101, 121]],
+        [/* light yellow */[251, 255, 28], [92, 101, 121]],
+        [/* dark blue */[249, 208, 32], [54, 57, 70]],
+        [/* dark blue */[247, 179, 34], [54, 57, 70]],
+        // [/* person 1 */[207, 90, 46], [121, 198, 228]],
+        // [/* person 2 */[163, 103, 94], [96, 176, 214]],
+      ];
+
+      const SKY_COLOR_REPLACEMENTS = [
+        [/* sky */[14, 64, 126], [254, 101, 0]],
       ];
       const elScreenSource = window.elScreenSource;
       const elScreen = window.elScreen;
@@ -166,19 +218,22 @@
       elScreenBack.width = elScreen.width = width;
       elScreenBack.height = elScreen.height = height;
 
-      const COLOR_REPLACEMENT_START_Y = ((((width * 180)  / PIXEL_MULTIPLIER) | 0) << 2);
-      const COLOR_REPLACEMENT_END_Y = ((((width * 476)  / PIXEL_MULTIPLIER) | 0) << 2);;
+      const COLOR_REPLACEMENT_START_Y = ((((width * 180) / PIXEL_MULTIPLIER) | 0) << 2);
+      const COLOR_REPLACEMENT_END_Y = ((((width * 480) / PIXEL_MULTIPLIER) | 0) << 2);;
 
-      const isEqual = (a, b) => Math.abs(a - b) < 30;
-      const isColor = (r, g, b, targetR, targetG, targetB) =>
-        isEqual(r, targetR) && isEqual(g, targetG) && isEqual(b, targetB);
+      const SKY_COLOR_REPLACEMENT_START_Y = ((((width * 0) / PIXEL_MULTIPLIER) | 0) << 2);
+      const SKY_COLOR_REPLACEMENT_END_Y = ((((width * 375) / PIXEL_MULTIPLIER) | 0) << 2);;
 
-      const replaceColors = (data, i, replacementMap) => {
-        for(const [target, replace] of replacementMap) {
-          if (isColor(data[i], data[i+1], data[i+2], target[0], target[1], target[2])) {
+      const isEqual = (tolerance, a, b) => Math.abs(a - b) < tolerance;
+      const isColor = (tolerance, r, g, b, targetR, targetG, targetB) =>
+        isEqual(tolerance, r, targetR) && isEqual(tolerance, g, targetG) && isEqual(tolerance, b, targetB);
+
+      const replaceColors = (tolerance, data, i, replacementMap) => {
+        for (const [target, replace] of replacementMap) {
+          if (isColor(tolerance, data[i], data[i + 1], data[i + 2], target[0], target[1], target[2])) {
             data[i] = replace[0];
-            data[i+1] = replace[1];
-            data[i+2] = replace[2];
+            data[i + 1] = replace[1];
+            data[i + 2] = replace[2];
             return;
           }
         }
@@ -188,8 +243,11 @@
         contextBack.drawImage(elScreenSource, 0, 0, width, height);
         const imageData = contextBack.getImageData(0, 0, width, height);
         const data = imageData.data;
-        for(let i = COLOR_REPLACEMENT_START_Y; i < COLOR_REPLACEMENT_END_Y; i+=4) {
-          replaceColors(data, i, COLOR_REPLACEMENTS);
+        for (let i = COLOR_REPLACEMENT_START_Y; i < COLOR_REPLACEMENT_END_Y; i += 4) {
+          replaceColors(60, data, i, COLOR_REPLACEMENTS);
+        }
+        for (let i = SKY_COLOR_REPLACEMENT_START_Y; i < SKY_COLOR_REPLACEMENT_END_Y; i += 4) {
+          replaceColors(50, data, i, SKY_COLOR_REPLACEMENTS);
         }
         return imageData;
       }
@@ -203,7 +261,8 @@
 
       draw();
     })();
-  });
+      // });
   </script>
 </body>
+
 </html>

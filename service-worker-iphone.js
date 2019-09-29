@@ -1,8 +1,8 @@
-const CACHE_VERSION = 19;
+const CACHE_VERSION = 25;
 const CURRENT_CACHES = { prefetch: `prefetch-cache-v${CACHE_VERSION}` };
 const URLS_TO_PREFETCH = [
   './index.html',
-  './screen-iphone.mp4'
+  './screen-iphone-10.mp4'
 ];
 
 self.addEventListener('install', event => {

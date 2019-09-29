@@ -1,11 +1,12 @@
-const CACHE_VERSION = 48;
+const CACHE_VERSION = 65;
 const CURRENT_CACHES = { prefetch: `prefetch-cache-v${CACHE_VERSION}` };
 const URLS_TO_PREFETCH = [
   './manifest.json',
   './android.html',
   './screen-android.mp4',
   './AppIcon60x60.png',
-  './AppIcon60x60-2x.png'
+  './AppIcon60x60-2x.png',
+  './AppIcon60x60-2x2.png'
 ];
 
 self.addEventListener('install', event => {
